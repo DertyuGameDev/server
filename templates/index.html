@@ -1,48 +1,82 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Swipe Demo</title>
-    <style>
-        body {
-          margin: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          background: #f0f0f0;
-        }
-        img {
-          width: 300px;
-          height: 300px;
-          border-radius: 20px;
-          transition: transform 0.3s ease;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Swipe Demo</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f0f0f0;
+      overflow: hidden;
+    }
+
+    #swipe-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      overflow: hidden;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      transition: transform 0.3s ease;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    .swipe-left {
+      transform: translateX(-100vw);
+      opacity: 0;
+    }
+
+    .swipe-right {
+      transform: translateX(100vw);
+      opacity: 0;
+    }
+  </style>
 </head>
 <body>
-<img id="swipe-img" src="https://placekitten.com/300/300" alt="Swipe me">
-<script>
+  <div id="swipe-container">
+    <img id="swipe-img" src="https://placekitten.com/300/300" alt="Swipe me">
+  </div>
+
+  <script>
     const img = document.getElementById('swipe-img');
     let startX = 0;
+    let isSwiping = false;
     const userId = "{{ user_id }}";
 
-    img.addEventListener('touchstart', e => {
-      startX = e.touches[0].clientX;
+    img.addEventListener('mousedown', e => {
+      isSwiping = true;
+      startX = e.clientX;
     });
 
-    img.addEventListener('touchend', e => {
-      const endX = e.changedTouches[0].clientX;
+    img.addEventListener('mousemove', e => {
+      if (!isSwiping) return;
+      const moveX = e.clientX - startX;
+      img.style.transform = `translateX(${moveX}px)`;
+    });
+
+    img.addEventListener('mouseup', e => {
+      if (!isSwiping) return;
+      isSwiping = false;
+
+      const endX = e.clientX;
       const diff = endX - startX;
 
       let direction = null;
-      if (diff > 50) {
+      if (diff > 100) {
         direction = 'right';
-        img.style.transform = 'translateX(100px)';
-      } else if (diff < -50) {
+        img.classList.add('swipe-right');
+      } else if (diff < -100) {
         direction = 'left';
-        img.style.transform = 'translateX(-100px)';
+        img.classList.add('swipe-left');
       }
 
       if (direction) {
@@ -56,10 +90,18 @@
           .then(data => console.log("Ответ сервера:", data));
       }
 
+      // Через 0.3 секунды, после анимации, убираем картинку
       setTimeout(() => {
-        img.style.transform = 'translateX(0)';
-      }, 400);
+        img.style.display = 'none';
+      }, 300);
     });
-</script>
+
+    img.addEventListener('mouseleave', () => {
+      if (isSwiping) {
+        isSwiping = false;
+        img.style.transform = 'translateX(0)';
+      }
+    });
+  </script>
 </body>
 </html>

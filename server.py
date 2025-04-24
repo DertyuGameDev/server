@@ -6,11 +6,6 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     user_id = request.args.get("user_id")
-
-    # Простейшая авторизация
-    if user_id != "123":
-        return "⛔ Доступ запрещен. Неверный user_id.", 403
-
     return render_template("index.html", user_id=user_id)
 
 
