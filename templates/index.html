@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Swipe Demo</title>
+    <style>
+        body {
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background: #f0f0f0;
+        }
+        img {
+          width: 300px;
+          height: 300px;
+          border-radius: 20px;
+          transition: transform 0.3s ease;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+<img id="swipe-img" src="https://placekitten.com/300/300" alt="Swipe me">
+<script>
+    const img = document.getElementById('swipe-img');
+    let startX = 0;
+    const userId = "{{ user_id }}";
+
+    img.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+    });
+
+    img.addEventListener('touchend', e => {
+      const endX = e.changedTouches[0].clientX;
+      const diff = endX - startX;
+
+      let direction = null;
+      if (diff > 50) {
+        direction = 'right';
+        img.style.transform = 'translateX(100px)';
+      } else if (diff < -50) {
+        direction = 'left';
+        img.style.transform = 'translateX(-100px)';
+      }
+
+      if (direction) {
+        fetch('/swipe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: userId, direction: direction })
+        }).then(res => res.json())
+          .then(data => console.log("Ответ сервера:", data));
+      }
+
+      setTimeout(() => {
+        img.style.transform = 'translateX(0)';
+      }, 400);
+    });
+</script>
+</body>
+</html>
