@@ -5,103 +5,64 @@
   <title>Swipe Demo</title>
   <style>
     body {
-      margin: 0;
+      font-family: Arial, sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background: #f0f0f0;
-      overflow: hidden;
+      margin: 0;
+      background-color: #f4f4f4;
+      text-align: center;
     }
 
-    #swipe-container {
-      position: relative;
-      width: 300px;
-      height: 300px;
-      overflow: hidden;
+    #image-container {
+      margin-bottom: 20px;
     }
 
     img {
-      width: 100%;
-      height: 100%;
+      width: 300px;
+      height: 300px;
       border-radius: 20px;
-      transition: transform 0.3s ease;
       box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
       cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
     }
 
-    .swipe-left {
-      transform: translateX(-100vw);
-      opacity: 0;
-    }
-
-    .swipe-right {
-      transform: translateX(100vw);
-      opacity: 0;
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
-  <div id="swipe-container">
-    <img id="swipe-img" src="https://placekitten.com/300/300" alt="Swipe me">
+  <div id="image-container">
+    <img src="{{ image_url }}" alt="Kitten" id="image">
   </div>
 
-  <script>
-    const img = document.getElementById('swipe-img');
-    let startX = 0;
-    let isSwiping = false;
-    const userId = "{{ user_id }}";
-
-    img.addEventListener('mousedown', e => {
-      isSwiping = true;
-      startX = e.clientX;
-    });
-
-    img.addEventListener('mousemove', e => {
-      if (!isSwiping) return;
-      const moveX = e.clientX - startX;
-      img.style.transform = `translateX(${moveX}px)`;
-    });
-
-    img.addEventListener('mouseup', e => {
-      if (!isSwiping) return;
-      isSwiping = false;
-
-      const endX = e.clientX;
-      const diff = endX - startX;
-
-      let direction = null;
-      if (diff > 100) {
-        direction = 'right';
-        img.classList.add('swipe-right');
-      } else if (diff < -100) {
-        direction = 'left';
-        img.classList.add('swipe-left');
-      }
-
-      if (direction) {
-        fetch('/swipe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ user_id: userId, direction: direction })
-        }).then(res => res.json())
-          .then(data => console.log("Ответ сервера:", data));
-      }
-
-      // Через 0.3 секунды, после анимации, убираем картинку
-      setTimeout(() => {
-        img.style.display = 'none';
-      }, 300);
-    });
-
-    img.addEventListener('mouseleave', () => {
-      if (isSwiping) {
-        isSwiping = false;
-        img.style.transform = 'translateX(0)';
-      }
-    });
-  </script>
+  <div class="button-container">
+    <form action="/swipe" method="POST" style="display:inline-block;">
+      <input type="hidden" name="direction" value="left">
+      <input type="hidden" name="current_image_index" value="{{ current_image_index }}">
+      <button type="submit">Влево</button>
+    </form>
+    <form action="/swipe" method="POST" style="display:inline-block;">
+      <input type="hidden" name="direction" value="right">
+      <input type="hidden" name="current_image_index" value="{{ current_image_index }}">
+      <button type="submit">Вправо</button>
+    </form>
+  </div>
 </body>
 </html>
