@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, request, render_template, jsonify
 
 app = Flask(__name__)
@@ -11,9 +13,13 @@ images = [
 
 d = {}
 
+
 @app.route('/')
 def index():
-    user_id = request.args.get("user_id")
+    data = request.args.get("data")
+    if data:
+        data = json.loads(data)
+    user_id = data['user_id']
     d[user_id] = d.get(user_id, 0)
     return render_template("index.html", user_id=user_id, image_url=images[d[user_id]],
                            current_image_index=d[user_id])
@@ -24,11 +30,12 @@ def handle_swipe():
     data = request.get_json()
     direction = data.get("direction")
     user_id = data.get("user_id")
+    print(data)
 
     if direction == 'right':
-        d[user_id] = (d[user_id] + 1) % len(images)  # Следующая картинка
+        d[user_id] = (d[user_id] + 1) % len(images)
     elif direction == 'left':
-        d[user_id] = (d[user_id] - 1) % len(images)  # Предыдущая картинка
+        d[user_id] = (d[user_id] - 1) % len(images)
 
     new_image_url = images[d[user_id]]
 

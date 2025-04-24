@@ -62,7 +62,6 @@
     const rightBtn = document.getElementById('right-btn');
     const image = document.getElementById('image');
     let currentImageIndex = {{ current_image_index }};
-    const userId = "{{ user_id }}";
 
     // Функция для отправки запроса
     function sendSwipe(direction) {
@@ -72,7 +71,7 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: userId,
+          user_id: {{ user_id }},
           direction: direction
         })
       })
