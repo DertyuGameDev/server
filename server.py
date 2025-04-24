@@ -4,40 +4,35 @@ app = Flask(__name__)
 
 # Список картинок для демонстрации
 images = [
-    "https://placekitten.com/300/300",
-    "https://placekitten.com/300/301",
-    "https://placekitten.com/300/302"
+    "static/photo_2025-03-13_21-08-05.jpg",
+    "static/photo_2025-03-14_20-35-18.jpg",
+    "static/photo_2025-03-14_20-35-26.jpg"
 ]
 
+d = {}
 
 @app.route('/')
 def index():
     user_id = request.args.get("user_id")
-
-    # Простейшая авторизация
-    if not user_id:
-        return "⛔ Доступ запрещен. Неверный user_id.", 403
-
-    # Начальная картинка
-    current_image_index = 0
-    return render_template("index.html", user_id=user_id, image_url=images[current_image_index],
-                           current_image_index=current_image_index)
+    d[user_id] = d.get(user_id, 0)
+    return render_template("index.html", user_id=user_id, image_url=images[d[user_id]],
+                           current_image_index=d[user_id])
 
 
 @app.route('/swipe', methods=['POST'])
 def handle_swipe():
     data = request.get_json()
     direction = data.get("direction")
-    current_image_index = data.get("current_image_index")
+    user_id = data.get("user_id")
 
     if direction == 'right':
-        current_image_index = (current_image_index + 1) % len(images)  # Следующая картинка
+        d[user_id] = (d[user_id] + 1) % len(images)  # Следующая картинка
     elif direction == 'left':
-        current_image_index = (current_image_index - 1) % len(images)  # Предыдущая картинка
+        d[user_id] = (d[user_id] - 1) % len(images)  # Предыдущая картинка
 
-    new_image_url = images[current_image_index]
+    new_image_url = images[d[user_id]]
 
-    return jsonify({"status": "ok", "new_image_url": new_image_url, "current_image_index": current_image_index})
+    return jsonify({"status": "ok", "new_image_url": new_image_url, "current_image_index": d[user_id]})
 
 
 if __name__ == '__main__':

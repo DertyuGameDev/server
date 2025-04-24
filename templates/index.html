@@ -53,16 +53,48 @@
   </div>
 
   <div class="button-container">
-    <form action="/swipe" method="POST" style="display:inline-block;">
-      <input type="hidden" name="direction" value="left">
-      <input type="hidden" name="current_image_index" value="{{ current_image_index }}">
-      <button type="submit">Влево</button>
-    </form>
-    <form action="/swipe" method="POST" style="display:inline-block;">
-      <input type="hidden" name="direction" value="right">
-      <input type="hidden" name="current_image_index" value="{{ current_image_index }}">
-      <button type="submit">Вправо</button>
-    </form>
+    <button id="left-btn">Влево</button>
+    <button id="right-btn">Вправо</button>
   </div>
+
+  <script>
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
+    const image = document.getElementById('image');
+    let currentImageIndex = {{ current_image_index }};
+    const userId = "{{ user_id }}";
+
+    // Функция для отправки запроса
+    function sendSwipe(direction) {
+      fetch('/swipe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          direction: direction
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Обновляем картинку
+        image.src = data.new_image_url;
+        currentImageIndex = data.current_image_index;
+      })
+      .catch(error => {
+        console.error("Ошибка при отправке данных:", error);
+      });
+    }
+
+    // Обработчики для кнопок
+    leftBtn.addEventListener('click', () => {
+      sendSwipe('left');
+    });
+
+    rightBtn.addEventListener('click', () => {
+      sendSwipe('right');
+    });
+  </script>
 </body>
 </html>
