@@ -1,8 +1,11 @@
 import json
-
 from flask import Flask, request, render_template, jsonify
+from data.user import UserCard
+
+from data import db_session, user
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
 # Список картинок для демонстрации
 images = [
@@ -29,12 +32,13 @@ def index():
 def handle_swipe():
     data = request.get_json()
     direction = data.get("direction")
+    user_id_swiped = data.get("user_id_swiped")
     user_id = data.get("user_id")
-    print(data)
-
-    if direction == 'right':
+    db_sess = db_session.create_session()
+    obj_job = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
+    if direction == 'like':
         d[user_id] = (d[user_id] + 1) % len(images)
-    elif direction == 'left':
+    else:
         d[user_id] = (d[user_id] - 1) % len(images)
 
     new_image_url = images[d[user_id]]
@@ -43,4 +47,5 @@ def handle_swipe():
 
 
 if __name__ == '__main__':
+    db_session.global_init('db/love.db')
     app.run(debug=True)
