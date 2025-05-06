@@ -2,7 +2,7 @@ import threading
 import json
 import os
 import random
-import bot  # модуль с aiogram-ботом
+import bot
 import requests
 from flask import Flask, request, render_template, jsonify
 
