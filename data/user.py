@@ -13,9 +13,8 @@ class UserCard(SqlAlchemyBase):
     capture = sqlalchemy.Column(sqlalchemy.String(255))
     picture = sqlalchemy.Column(sqlalchemy.String(255))
     old = sqlalchemy.Column(sqlalchemy.Integer)
+    like = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     disabled = sqlalchemy.Column(sqlalchemy.Boolean)
-    anon = sqlalchemy.Column(sqlalchemy.Boolean)
-
 
     def __repr__(self):
         return f"<UserCard {self.name} ({self.tg_id})>"
