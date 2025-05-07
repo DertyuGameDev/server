@@ -120,7 +120,9 @@ def edit_user(tg_id):
     user = db_sess.query(UserCard).filter(UserCard.tg_id == tg_id).first()
     keys = [
         "old",
-        "name"
+        "name",
+        "capture",
+        "disabled"
     ]
     key = list(request.json.keys())[0]
     val = list(request.json.values())[0]
@@ -128,7 +130,10 @@ def edit_user(tg_id):
         return
     elif key not in keys:
         return
-    exec(f"user.{key} = \"{val}\"")
+    if key == "disabled":
+        exec(f"user.{key} = {val}")
+    else:
+        exec(f"user.{key} = \"{val}\"")
     db_sess.commit()
     return jsonify({"success": "ok"})
 
