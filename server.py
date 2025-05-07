@@ -1,11 +1,9 @@
 import threading
 import json
-import os
 import random
-import bot
+
 import requests
 from flask import Flask, request, render_template, jsonify
-
 from data.liked import Liked
 from data.u2u import U2U
 from data.user import UserCard
@@ -32,6 +30,35 @@ def index():
     except Exception:
         return render_template("index.html", user_id=user_id, swiped=user_id,
                                image_url='static/img/default.jpg', caption='Никого нет в сети(')
+
+
+@app.route('/check_user', methods=['POST'])
+def check_user():
+    data = request.json
+    user_id = data.get("user_id")
+
+    db_sess = db_session.create_session()
+    user = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
+    return jsonify({"exists": user is not None})
+
+
+@app.route('/create_user', methods=['POST'])
+def create_user():
+    data = request.json
+    db_sess = db_session.create_session()
+    user = UserCard(**data)
+    db_sess.add(user)
+    db_sess.commit()
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/create_picture', methods=['POST'])
+def create_picture():
+    file = request.files.get('file')
+    filename = file.filename
+    file.save(filename)
+
+    return jsonify({'status': 'ok', 'filename': filename})
 
 
 @app.route('/swipe', methods=['POST'])
@@ -73,7 +100,7 @@ def handle_swipe():
 
         mutual = db_sess.query(U2U).filter_by(user1=user_id_swiped, user2=user_id, like=1).first()
         if mutual:
-            bot.message_like({'user1': user_id, 'user2': user_id_swiped})
+            requests.post('', params={'user1': user_id, 'user2': user_id_swiped})
     available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
                                                                                     != user_id).all()
 
@@ -91,17 +118,4 @@ def run_flask():
     app.run(debug=False, port=5000)
 
 
-def run_bot():
-    import asyncio
-    asyncio.run(bot.main())
-
-
-if __name__ == '__main__':
-    flask_thread = threading.Thread(target=run_flask)
-    bot_thread = threading.Thread(target=run_bot)
-
-    flask_thread.start()
-    bot_thread.start()
-
-    flask_thread.join()
-    bot_thread.join()
+run_flask()
