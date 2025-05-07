@@ -114,6 +114,25 @@ def handle_swipe():
     return jsonify({"status": "ok", 'src': best.picture, 'user_id': best.tg_id, 'caption': capture})
 
 
+@app.route("/edit_user/<int:tg_id>", methods=["PUT"])
+def edit_user(tg_id):
+    db_sess = db_session.create_session()
+    user = db_sess.query(UserCard).filter(UserCard.tg_id == tg_id).first()
+    keys = [
+        "old",
+        "name"
+    ]
+    key = list(request.json.keys())[0]
+    val = list(request.json.values())[0]
+    if not user:
+        return
+    elif key not in keys:
+        return
+    exec(f"user.{key} = \"{val}\"")
+    db_sess.commit()
+    return jsonify({"success": "ok"})
+
+
 def run_flask():
     app.run(debug=False, port=5000)
 
