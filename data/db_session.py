@@ -27,8 +27,8 @@ def global_init(db_file):
     print(f"Подключение к базе данных по адресу {conn_str}")
 
     # создаём движок для работы с БД
-    engine = create_engine(conn_str, connect_args={"check_same_thread": False}, pool_size=5, max_overflow=10,
-                           pool_timeout=1)
+    engine = sa.create_engine(conn_str, connect_args={"check_same_thread": False}, pool_size=5, max_overflow=10,
+                              pool_timeout=1)
 
     #  создаем фабрику подключений к нашей базе данных
     __factory = orm.sessionmaker(bind=engine)
