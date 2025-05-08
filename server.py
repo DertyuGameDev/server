@@ -100,7 +100,8 @@ def handle_swipe():
 
         mutual = db_sess.query(U2U).filter_by(user1=user_id_swiped, user2=user_id, like=1).first()
         if mutual:
-            requests.post('', params={'user1': user_id, 'user2': user_id_swiped})
+            requests.post('https://bot-production-1a86.up.railway.app/json',
+                          json={'user1': user_id, 'user2': user_id_swiped})
     available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
                                                                                     != user_id).all()
 
@@ -131,9 +132,9 @@ def edit_user(tg_id):
     elif key not in keys:
         return
     if key == "disabled":
-        exec(f"user.{key} = {val}")
+        exec(f"user.{key} = {int(val)}")
     else:
-        exec(f"user.{key} = \"{val}\"")
+        exec(f"user.{key} = \"{int(val)}\"")
     db_sess.commit()
     return jsonify({"success": "ok"})
 
