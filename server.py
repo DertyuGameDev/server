@@ -13,6 +13,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 db_session.global_init('db/love.db')
 
+d = []
+
 
 @app.route('/')
 def index():
@@ -21,17 +23,18 @@ def index():
         data = json.loads(data)
     user_id = data['user_id']
     db_sess = db_session.create_session()
-    users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id != user_id)
-    try:
-        swiped = random.choice(list(users))
-        capture = f'{swiped.name}, {swiped.old}' + (f' - {swiped.capture}' if swiped.capture != '-' else '')
-        db_sess.close()
-        return render_template("index.html", user_id=user_id, swiped=swiped.tg_id, image_url=swiped.picture,
-                               caption=capture)
-    except Exception:
-        db_sess.close()
-        return render_template("index.html", user_id=user_id, swiped=user_id,
-                               image_url='static/img/default.jpg', caption='Никого нет в сети(')
+    with db_sess.no_autoflush:
+        users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id != user_id)
+        try:
+            swiped = random.choice(list(users))
+            capture = f'{swiped.name}, {swiped.old}' + (f' - {swiped.capture}' if swiped.capture != '-' else '')
+            db_sess.close()
+            return render_template("index.html", user_id=user_id, swiped=swiped.tg_id, image_url=swiped.picture,
+                                   caption=capture)
+        except Exception:
+            db_sess.close()
+            return render_template("index.html", user_id=user_id, swiped=user_id,
+                                   image_url='static/img/default.jpg', caption='Никого нет в сети(')
 
 
 @app.route('/check_user', methods=['POST'])
@@ -40,20 +43,22 @@ def check_user():
     user_id = data.get("user_id")
 
     db_sess = db_session.create_session()
-    user = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
-    db_sess.close()
-    return jsonify({"exists": user is not None})
+    with db_sess.no_autoflush:
+        user = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
+        db_sess.close()
+        return jsonify({"exists": user is not None})
 
 
 @app.route('/create_user', methods=['POST'])
 def create_user():
     data = request.json
     db_sess = db_session.create_session()
-    user = UserCard(**data)
-    db_sess.add(user)
-    db_sess.commit()
-    db_sess.close()
-    return jsonify({'status': 'ok'})
+    with db_sess.no_autoflush:
+        user = UserCard(**data)
+        db_sess.add(user)
+        db_sess.commit()
+        db_sess.close()
+        return jsonify({'status': 'ok'})
 
 
 @app.route('/create_picture', methods=['POST'])
@@ -65,6 +70,16 @@ def create_picture():
     return jsonify({'status': 'ok', 'filename': filename})
 
 
+@app.route('/get_events', methods=["GET"])
+def get_events():
+    f = d.copy()
+    j = {'events': []}
+    d.clear()
+    for i in f:
+        j['events'].append({'user1': i[0], 'user2': i[1]})
+    return jsonify(j)
+
+
 @app.route('/swipe', methods=['POST'])
 def handle_swipe():
     data = request.get_json()
@@ -72,78 +87,81 @@ def handle_swipe():
     user_id = data.get("user_id")
     user_id_swiped = data.get("user_id_swiped")
     db_sess = db_session.create_session()
-    if user_id == user_id_swiped and len(db_sess.query(UserCard).all()) == 1:
-        return jsonify({
-            'src': 'static/img/default.jpg',
-            'caption': 'Никого нет в сети(',
-            'user_id': user_id
-        })
+    with db_sess.no_autoflush:
 
-    liker = db_sess.query(UserCard).filter_by(tg_id=user_id).first()
-    to_like = db_sess.query(UserCard).filter_by(tg_id=user_id_swiped).first()
+        if user_id == user_id_swiped and len(db_sess.query(UserCard).all()) == 1:
+            return jsonify({
+                'src': 'static/img/default.jpg',
+                'caption': 'Никого нет в сети(',
+                'user_id': user_id
+            })
 
-    if not liker or not to_like:
+        liker = db_sess.query(UserCard).filter_by(tg_id=user_id).first()
+        to_like = db_sess.query(UserCard).filter_by(tg_id=user_id_swiped).first()
+
+        if not liker or not to_like:
+            db_sess.close()
+            return jsonify({"status": "error", "message": "Пользователь не найден"}), 404
+
+        reaction = U2U(
+            user1=user_id,
+            user2=user_id_swiped,
+            like=1 if direction == 'like' else 0
+        )
+        db_sess.add(reaction)
+        if direction == 'like':
+            to_like.like += 1
+
+            liked_entry = db_sess.query(Liked).filter_by(user1=user_id).first()
+            if not liked_entry:
+                liked_entry = Liked(user1=user_id, like_for=[user_id_swiped])
+                db_sess.add(liked_entry)
+            else:
+                if user_id_swiped not in liked_entry.like_for:
+                    liked_entry.like_for.append(user_id_swiped)
+
+            mutual = db_sess.query(U2U).filter_by(user1=user_id_swiped, user2=user_id, like=1).first()
+            if mutual:
+                if (user_id, user_id_swiped) not in d and (user_id_swiped, user_id) not in d:
+                    d.append(user_id, user_id_swiped)
+        available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
+                                                                                        != user_id).all()
+
+        users_liked_by_user = db_sess.query(Liked).filter(Liked.user1 == user_id).first()
+        liked_user_ids = set(users_liked_by_user.like_for) if users_liked_by_user else set()
+
+        sorted_users = sorted(available_users, key=lambda user: (user.tg_id in liked_user_ids, user.tg_id))
+        best = sorted_users[0]
+        db_sess.commit()
+        capture = f'{best.name}, {best.old}' + (f' - {best.capture}' if best.capture != '-' else '')
         db_sess.close()
-        return jsonify({"status": "error", "message": "Пользователь не найден"}), 404
-
-    reaction = U2U(
-        user1=user_id,
-        user2=user_id_swiped,
-        like=1 if direction == 'like' else 0
-    )
-    db_sess.add(reaction)
-    if direction == 'like':
-        to_like.like += 1
-
-        liked_entry = db_sess.query(Liked).filter_by(user1=user_id).first()
-        if not liked_entry:
-            liked_entry = Liked(user1=user_id, like_for=[user_id_swiped])
-            db_sess.add(liked_entry)
-        else:
-            if user_id_swiped not in liked_entry.like_for:
-                liked_entry.like_for.append(user_id_swiped)
-
-        mutual = db_sess.query(U2U).filter_by(user1=user_id_swiped, user2=user_id, like=1).first()
-        if mutual:
-            requests.post('https://bot-production-1a86.up.railway.app/json',
-                          json={'user1': user_id, 'user2': user_id_swiped})
-    available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
-                                                                                    != user_id).all()
-
-    users_liked_by_user = db_sess.query(Liked).filter(Liked.user1 == user_id).first()
-    liked_user_ids = set(users_liked_by_user.like_for) if users_liked_by_user else set()
-
-    sorted_users = sorted(available_users, key=lambda user: (user.tg_id in liked_user_ids, user.tg_id))
-    best = sorted_users[0]
-    db_sess.commit()
-    capture = f'{best.name}, {best.old}' + (f' - {best.capture}' if best.capture != '-' else '')
-    db_sess.close()
-    return jsonify({"status": "ok", 'src': best.picture, 'user_id': best.tg_id, 'caption': capture})
+        return jsonify({"status": "ok", 'src': best.picture, 'user_id': best.tg_id, 'caption': capture})
 
 
 @app.route("/edit_user/<int:tg_id>", methods=["PUT"])
 def edit_user(tg_id):
     db_sess = db_session.create_session()
-    user = db_sess.query(UserCard).filter(UserCard.tg_id == tg_id).first()
-    keys = [
-        "old",
-        "name",
-        "capture",
-        "disabled"
-    ]
-    key = list(request.json.keys())[0]
-    val = list(request.json.values())[0]
-    if not user:
-        return
-    elif key not in keys:
-        return
-    if key == "disabled":
-        exec(f"user.{key} = {int(val)}")
-    else:
-        exec(f"user.{key} = \"{int(val)}\"")
-    db_sess.commit()
-    db_sess.close()
-    return jsonify({"success": "ok"})
+    with db_sess.no_autoflush:
+        user = db_sess.query(UserCard).filter(UserCard.tg_id == tg_id).first()
+        keys = [
+            "old",
+            "name",
+            "capture",
+            "disabled"
+        ]
+        key = list(request.json.keys())[0]
+        val = list(request.json.values())[0]
+        if not user:
+            return
+        elif key not in keys:
+            return
+        if key == "disabled":
+            exec(f"user.{key} = {int(val)}")
+        else:
+            exec(f"user.{key} = \"{int(val)}\"")
+        db_sess.commit()
+        db_sess.close()
+        return jsonify({"success": "ok"})
 
 
 def run_flask():
