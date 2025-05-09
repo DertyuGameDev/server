@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выйдите в онлайн!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+
+        .cross {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 30px;
+        }
+
+        .cross:before, .cross:after {
+            content: "";
+            position: absolute;
+            background-color: #ff0000;
+        }
+
+        .cross:before {
+            left: 50%;
+            width: 30%;
+            margin-left: -15%;
+            height: 100%;
+        }
+
+        .cross:after {
+            top: 50%;
+            height: 30%;
+            margin-top: -15%;
+            width: 100%;
+        }
+
+        .message {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            padding: 0 20px;
+        }
+
+        @media (max-width: 480px) {
+            .cross {
+                width: 80px;
+                height: 80px;
+            }
+
+            .message {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cross"></div>
+    <div class="message">Выйдите в онлайн!</div>
+</body>
+</html>

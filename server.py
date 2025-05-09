@@ -24,6 +24,9 @@ def index():
     user_id = data['user_id']
     db_sess = db_session.create_session()
     with db_sess.no_autoflush:
+        me = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
+        if me.disabled == 1:
+            return render_template("disabled.html")
         users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id != user_id)
         try:
             swiped = random.choice(list(users))
@@ -78,6 +81,18 @@ def get_events():
     for i in f:
         j['events'].append({'user1': i[0], 'user2': i[1]})
     return jsonify(j)
+
+
+@app.route('/get_disabled', methods=["POST"])
+def get_dis():
+    data = request.json
+    user_id = data.get("user_id")
+
+    db_sess = db_session.create_session()
+    with db_sess.no_autoflush:
+        user = db_sess.query(UserCard).filter(UserCard.tg_id == user_id).first()
+        db_sess.close()
+        return jsonify({"disabled": user.disabled})
 
 
 @app.route('/swipe', methods=['POST'])
