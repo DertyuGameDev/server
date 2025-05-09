@@ -99,8 +99,8 @@ def get_dis():
 def handle_swipe():
     data = request.get_json()
     direction = data.get("direction")
-    user_id = data.get("user_id")
-    user_id_swiped = data.get("user_id_swiped")
+    user_id = int(data.get("user_id"))
+    user_id_swiped = int(data.get("user_id_swiped"))
     db_sess = db_session.create_session()
     with db_sess.no_autoflush:
         if user_id == user_id_swiped and len(db_sess.query(UserCard).all()) == 1:
@@ -123,27 +123,40 @@ def handle_swipe():
             like=1 if direction == 'like' else 0
         )
         db_sess.add(reaction)
+        print(3)
+        db_sess.commit()
         if direction == 'like':
             to_like.like += 1
 
             liked_entry = db_sess.query(Liked).filter_by(user1=user_id).first()
+            liked_entry1 = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
             if not liked_entry:
                 liked_entry = Liked(user1=user_id, like_for=[user_id_swiped])
                 db_sess.add(liked_entry)
-            else:
-                if user_id_swiped not in liked_entry.like_for:
-                    liked_entry.like_for.append(user_id_swiped)
-
+            elif user_id_swiped not in liked_entry.like_for:
+                liked_entry.like_for = liked_entry.like_for + [user_id_swiped]
+            if not liked_entry1:
+                liked_entry1 = Liked(user1=user_id_swiped, like_for=[])
+                db_sess.add(liked_entry1)
+            db_sess.commit()
             mutual2 = db_sess.query(Liked).filter_by(user1=user_id).first()
             mutual = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
+            print(mutual2.like_for)
+            print(mutual.like_for)
             if user_id in mutual.like_for:
                 if (user_id, user_id_swiped) not in d and (user_id_swiped, user_id) not in d:
-                    d.append(user_id, user_id_swiped)
-                    mutual.like_for.remove(user_id)
-                    mutual2.like_for.remove(user_id_swiped)
+                    d.append((user_id, user_id_swiped))
+                    new_list = mutual.like_for.copy()
+                    new_list.remove(user_id)
+                    mutual.like_for = new_list
+
+                    new_list = mutual2.like_for.copy()
+                    new_list.remove(user_id_swiped)
+                    mutual2.like_for = new_list
+                    db_sess.commit()
         else:
             liked_entry = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
-            if user_id in liked_entry:
+            if user_id in liked_entry.like_for:
                 liked_entry.like_for.remove(user_id)
         available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
                                                                                         != user_id).all()
@@ -175,10 +188,9 @@ def handle_swipe():
             sorted_list.remove(user_id_swiped)
             sorted_list.insert(-1, user_id_swiped)
             best = sorted_list[0]
-        db_sess.commit()
         capture = f'{best.name}, {best.old}' + (f' - {best.capture}' if best.capture != '-' else '')
         db_sess.close()
-        return jsonify({"status": "ok", 'src': best.picture, 'user_id': best.tg_id, 'caption': capture})
+        return jsonify({"status": "ok", 'src': best.picture, 'user_id': int(best.tg_id), 'caption': capture})
 
 
 @app.route("/edit_user/<int:tg_id>", methods=["PUT"])
