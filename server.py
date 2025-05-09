@@ -88,7 +88,6 @@ def handle_swipe():
     user_id_swiped = data.get("user_id_swiped")
     db_sess = db_session.create_session()
     with db_sess.no_autoflush:
-
         if user_id == user_id_swiped and len(db_sess.query(UserCard).all()) == 1:
             return jsonify({
                 'src': 'static/img/default.jpg',
@@ -120,18 +119,47 @@ def handle_swipe():
                 if user_id_swiped not in liked_entry.like_for:
                     liked_entry.like_for.append(user_id_swiped)
 
-            mutual = db_sess.query(U2U).filter_by(user1=user_id_swiped, user2=user_id, like=1).first()
-            if mutual:
+            mutual2 = db_sess.query(Liked).filter_by(user1=user_id).first()
+            mutual = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
+            if user_id in mutual.like_for:
                 if (user_id, user_id_swiped) not in d and (user_id_swiped, user_id) not in d:
                     d.append(user_id, user_id_swiped)
+                    mutual.like_for.remove(user_id)
+                    mutual2.like_for.remove(user_id_swiped)
+        else:
+            liked_entry = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
+            if user_id in liked_entry:
+                liked_entry.like_for.remove(user_id)
         available_users = db_sess.query(UserCard).filter(UserCard.disabled == 0).filter(UserCard.tg_id
                                                                                         != user_id).all()
 
-        users_liked_by_user = db_sess.query(Liked).filter(Liked.user1 == user_id).first()
-        liked_user_ids = set(users_liked_by_user.like_for) if users_liked_by_user else set()
-
-        sorted_users = sorted(available_users, key=lambda user: (user.tg_id in liked_user_ids, user.tg_id))
-        best = sorted_users[0]
+        # users_liked_by_user = db_sess.query(Liked).filter(user_id in Liked.like_for).first()
+        # if users_liked_by_user:
+        #     list_users = []
+        #     for i in users_liked_by_user:
+        #
+        # elif len(available_users) == 1:
+        #     best = available_users[0]
+        # else:
+        if len(available_users) == 0:
+            return jsonify({
+                'src': 'static/img/default.jpg',
+                'caption': 'Никого нет в сети(',
+                'user_id': user_id
+            })
+        elif len(available_users) == 1:
+            best = db_sess.query(UserCard).filter(UserCard.tg_id == user_id_swiped).first()
+        elif len(available_users) == 2:
+            best = db_sess.query(UserCard).filter(UserCard.tg_id != user_id_swiped).filter(
+                UserCard.tg_id != user_id).first()
+        else:
+            l1 = db_sess.query(Liked).filter(user_id in Liked.like_for).all()
+            l1 = list(filter(lambda x: x in available_users, l1))
+            l2 = list(map(lambda x: x not in l1, available_users))
+            sorted_list = l1 + l2
+            sorted_list.remove(user_id_swiped)
+            sorted_list.insert(-1, user_id_swiped)
+            best = sorted_list[0]
         db_sess.commit()
         capture = f'{best.name}, {best.old}' + (f' - {best.capture}' if best.capture != '-' else '')
         db_sess.close()

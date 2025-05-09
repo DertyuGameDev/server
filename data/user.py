@@ -1,3 +1,5 @@
+from sqlalchemy.orm import relationship
+
 from .db_session import SqlAlchemyBase
 import sqlalchemy
 from sqlalchemy import orm
