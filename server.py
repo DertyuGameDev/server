@@ -1,8 +1,6 @@
-import threading
 import json
 import random
 
-import requests
 from flask import Flask, request, render_template, jsonify
 from data.liked import Liked
 from data.u2u import U2U
