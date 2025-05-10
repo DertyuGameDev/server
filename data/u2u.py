@@ -11,7 +11,7 @@ class U2U(SqlAlchemyBase):
     user1 = sqlalchemy.Column(sqlalchemy.Integer)
     like = sqlalchemy.Column(sqlalchemy.Integer)
     user2 = sqlalchemy.Column(sqlalchemy.Integer)
-    date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.now)
+    date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.now, nullable=True)
 
     def __repr__(self):
         return f"<UserCard {self.name} ({self.tg_id})>"

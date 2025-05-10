@@ -1,13 +1,11 @@
-import threading
 import json
 import random
-
-import requests
 from flask import Flask, request, render_template, jsonify
 from data.liked import Liked
 from data.u2u import U2U
 from data.user import UserCard
 from data import db_session
+from rec_als import als_rec
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
@@ -123,7 +121,6 @@ def handle_swipe():
             like=1 if direction == 'like' else 0
         )
         db_sess.add(reaction)
-        print(3)
         db_sess.commit()
         if direction == 'like':
             to_like.like += 1
@@ -141,8 +138,6 @@ def handle_swipe():
             db_sess.commit()
             mutual2 = db_sess.query(Liked).filter_by(user1=user_id).first()
             mutual = db_sess.query(Liked).filter_by(user1=user_id_swiped).first()
-            print(mutual2.like_for)
-            print(mutual.like_for)
             if user_id in mutual.like_for:
                 if (user_id, user_id_swiped) not in d and (user_id_swiped, user_id) not in d:
                     d.append((user_id, user_id_swiped))
@@ -184,7 +179,10 @@ def handle_swipe():
             l1 = db_sess.query(Liked).filter(user_id in Liked.like_for).all()
             l1 = list(filter(lambda x: x in available_users, l1))
             l2 = list(map(lambda x: x not in l1, available_users))
-            sorted_list = l1 + l2
+            rec = als_rec(user_id, len(available_users) + 1, db_sess)
+            recl1 = [i for i in rec if i in l1]
+            recl2 = [i for i in rec if i in l2]
+            sorted_list = recl1 + recl2
             sorted_list.remove(user_id_swiped)
             sorted_list.insert(-1, user_id_swiped)
             best = sorted_list[0]
