@@ -210,7 +210,7 @@ def edit_user(tg_id):
         if key == "disabled":
             exec(f"user.{key} = {int(val)}")
         else:
-            exec(f"user.{key} = \"{int(val)}\"")
+            exec(f"user.{key} = \"{val}\"")
         db_sess.commit()
         db_sess.close()
         return jsonify({"success": "ok"})
