@@ -1,5 +1,5 @@
 SQLAlchemy
 urllib3==1.26.15
-aiogram
-requests
+implicit
+pandas
 Flask

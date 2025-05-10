@@ -1,7 +1,6 @@
 import datetime
 from .db_session import SqlAlchemyBase
 import sqlalchemy
-from sqlalchemy import orm
 
 
 class U2U(SqlAlchemyBase):

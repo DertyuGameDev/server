@@ -1,7 +1,6 @@
 import pandas as pd
 from scipy.sparse import coo_matrix
 from implicit.als import AlternatingLeastSquares
-from data import db_session
 from data.u2u import U2U
 
 
