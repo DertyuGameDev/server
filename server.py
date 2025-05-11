@@ -207,7 +207,7 @@ def edit_user(tg_id):
             return
         elif key not in keys:
             return
-        if key == "disabled":
+        if key == "disabled" or key == 'old':
             exec(f"user.{key} = {int(val)}")
         else:
             exec(f"user.{key} = \"{val}\"")
