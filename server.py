@@ -126,7 +126,7 @@ def handle_swipe():
                 'user_id': user_id
             })
         elif len(available_users) <= 2:
-            best = available_users[0]
+            best = random.choice(available_users)
         if direction == 'like':
             try:
                 to_like.like += 1
@@ -163,12 +163,15 @@ def handle_swipe():
                 liked_entry.like_for.remove(user_id)
 
         if len(available_users) > 2:
-            l1 = db_sess.query(Liked).filter(user_id in Liked.like_for).all()
+            l1 = db_sess.query(Liked).filter(Liked.like_for.contains([user_id])).all()
             l1 = list(filter(lambda x: x in available_users, l1))
-            l2 = list(map(lambda x: x not in l1, available_users))
+            l2 = list(filter(lambda x: x not in l1, available_users))
             sorted_list = l1 + l2
-            sorted_list.remove(user_id_swiped)
-            sorted_list.insert(-1, user_id_swiped)
+            to_remove = next((u for u in sorted_list if u.tg_id == str(user_id_swiped)), None)
+            if to_remove:
+                sorted_list.remove(to_remove)
+                random.shuffle(sorted_list)
+                sorted_list.insert(-1, to_remove)
             best = sorted_list[0]
         capture = f'{best.name}, {best.old}' + (f' - {best.capture}' if best.capture != '-' else '')
         db_sess.close()
